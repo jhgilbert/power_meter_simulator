@@ -106,6 +106,7 @@ class ViewController: UIViewController, CBPeripheralManagerDelegate {
     }
     
     @objc func buildPowerDataForTransmission() -> Data {
+        print("\nBuilding power data for transmission...")
         let flags: UInt16 = 0
         let powerValue = UInt16(wattage)
         let energy: UInt16 = 0
@@ -137,6 +138,7 @@ class ViewController: UIViewController, CBPeripheralManagerDelegate {
     // Set up a cycling power service
     // and begin advertising it
     func setupBluetoothServices() {
+        print("\nSetting up cycling power service...")
         let cyclingPowerServiceUUID = CBUUID(string: "1818")
         let cyclingPowerCharacteristicUUID = CBUUID(string: "2A63")
         
@@ -191,6 +193,7 @@ class ViewController: UIViewController, CBPeripheralManagerDelegate {
     
     // Send power data (if available) at an interval
     func startBroadcastingTimer() {
+        print("\nStarting broadcasting timer ...")
         timer?.cancel()
         let queue = DispatchQueue.global(qos: .background)
         timer = DispatchSource.makeTimerSource(queue: queue)
@@ -202,6 +205,7 @@ class ViewController: UIViewController, CBPeripheralManagerDelegate {
     }
     
     func stopBroadcastingTimer() {
+        print("\nStopping broadcasting timer ...")
         timer?.cancel()
         timer = nil
     }
@@ -231,21 +235,23 @@ class ViewController: UIViewController, CBPeripheralManagerDelegate {
     // Handle opening and closing of app --------------------------------------
     
     func applicationDidEnterBackground(_ application: UIApplication) {
-        // Ensure advertising continues
-        if (isBroadcasting) {
+        print("applicationDidEnterBackground called.")
+        if isBroadcasting {
+            print("Broadcasting is active; setting up background task.")
+            registerBackgroundTask()
             if !peripheralManager.isAdvertising {
+                print("Peripheral manager not advertising; restarting advertising.")
                 let cyclingPowerServiceUUID = CBUUID(string: "1818")
                 peripheralManager.startAdvertising([CBAdvertisementDataServiceUUIDsKey: [cyclingPowerServiceUUID]])
             }
-            // Ensure timer continues
             startBroadcastingTimer()
-            
-            
-            registerBackgroundTask()
+        } else {
+            print("Not broadcasting; no background task registered.")
         }
     }
 
     func applicationWillEnterForeground(_ application: UIApplication) {
+        print("\nThe application will enter the foreground.")
         endBackgroundTask()
     }
     
