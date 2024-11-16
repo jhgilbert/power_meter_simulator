@@ -3,6 +3,8 @@ import CoreBluetooth
 
 class ViewController: UIViewController, CBPeripheralManagerDelegate {
     
+    let debug = true
+    
     // UI components and setup ------------------------------------------------
     
     var wattageLabel: UILabel!
@@ -106,7 +108,10 @@ class ViewController: UIViewController, CBPeripheralManagerDelegate {
     }
     
     @objc func buildPowerDataForTransmission() -> Data {
-        print("\nBuilding power data for transmission...")
+        if (debug) {
+            print("\nBuilding power data for transmission...")
+        }
+        
         let flags: UInt16 = 0
         let powerValue = UInt16(wattage)
         let energy: UInt16 = 0
@@ -132,19 +137,26 @@ class ViewController: UIViewController, CBPeripheralManagerDelegate {
     
     func peripheralManagerDidUpdateState(_ peripheral: CBPeripheralManager) {
         if peripheral.state == .poweredOn {
-            print("Bluetooth is ON.")
+            if (debug) {
+                print("Bluetooth is ON.")
+            }
             if (!cyclingPowerServiceAdded) {
                 setupCyclingPowerService()
             }
         } else {
-            print("Bluetooth is not available.")
+            if (debug) {
+                print("Bluetooth is not available.")
+            }
         }
     }
     
     // Create a cycling power service
     // and add it to the peripheralManager
     func setupCyclingPowerService() {
-        print("\nSetting up cycling power service...")
+        if (debug) {
+            print("\nSetting up cycling power service...")
+        }
+        
         let cyclingPowerCharacteristicUUID = CBUUID(string: "2A63")
         
         cyclingPowerCharacteristic = CBMutableCharacteristic(
@@ -185,11 +197,15 @@ class ViewController: UIViewController, CBPeripheralManagerDelegate {
         didSet {
             updateDisplayedBroadcastState()
             if (isBroadcasting) {
-                print("\nisBroadcasting set to true, attempting to resume broadcasting...")
+                if (debug) {
+                    print("\nisBroadcasting set to true, attempting to resume broadcasting...")
+                }
                 startBroadcastingTimer()
                 peripheralManager.startAdvertising([CBAdvertisementDataServiceUUIDsKey: [cyclingPowerServiceUUID]])
             } else {
-                print("\nisBroadcasting set to false, attempting to stop broadcasting...")
+                if (debug) {
+                    print("\nisBroadcasting set to false, attempting to stop broadcasting...")
+                }
                 stopBroadcastingTimer()
                 peripheralManager.stopAdvertising()
             }
@@ -200,7 +216,10 @@ class ViewController: UIViewController, CBPeripheralManagerDelegate {
     
     // Send power data (if available) at an interval
     func startBroadcastingTimer() {
-        print("\nStarting broadcasting timer ...")
+        if (debug) {
+            print("\nStarting broadcasting timer ...")
+        }
+        
         timer?.cancel()
         let queue = DispatchQueue.global(qos: .background)
         timer = DispatchSource.makeTimerSource(queue: queue)
@@ -212,7 +231,10 @@ class ViewController: UIViewController, CBPeripheralManagerDelegate {
     }
     
     func stopBroadcastingTimer() {
-        print("\nStopping broadcasting timer ...")
+        if (debug) {
+            print("\nStopping broadcasting timer ...")
+        }
+        
         timer?.cancel()
         timer = nil
     }
@@ -230,35 +252,55 @@ class ViewController: UIViewController, CBPeripheralManagerDelegate {
             UIApplication.shared.endBackgroundTask(self.backgroundTask)
             self.backgroundTask = .invalid
         }
-        print("Background task registered")
+        
+        if (debug) {
+            print("Background task registered")
+        }
     }
 
     func endBackgroundTask() {
         UIApplication.shared.endBackgroundTask(backgroundTask)
         backgroundTask = .invalid
-        print("Background task ended")
+        
+        if (debug) {
+            print("Background task ended")
+        }
     }
     
     // Handle opening and closing of app --------------------------------------
     
     func applicationDidEnterBackground(_ application: UIApplication) {
-        print("applicationDidEnterBackground called.")
+        if (debug) {
+            print("applicationDidEnterBackground called.")
+        }
+        
         if isBroadcasting {
-            print("Broadcasting is active; setting up background task.")
+            if (debug) {
+                print("Broadcasting is active; setting up background task.")
+            }
+            
             registerBackgroundTask()
+            
             if !peripheralManager.isAdvertising {
-                print("Peripheral manager not advertising; restarting advertising.")
-                let cyclingPowerServiceUUID = CBUUID(string: "1818")
+                if (debug) {
+                    print("Peripheral manager not advertising; restarting advertising.")
+                }
                 peripheralManager.startAdvertising([CBAdvertisementDataServiceUUIDsKey: [cyclingPowerServiceUUID]])
             }
+            
             startBroadcastingTimer()
         } else {
-            print("Not broadcasting; no background task registered.")
+            if (debug) {
+                print("Not broadcasting; no background task registered.")
+            }
         }
     }
 
     func applicationWillEnterForeground(_ application: UIApplication) {
-        print("\nThe application will enter the foreground.")
+        if (debug) {
+            print("\nThe application will enter the foreground.")
+        }
+        
         endBackgroundTask()
     }
     
