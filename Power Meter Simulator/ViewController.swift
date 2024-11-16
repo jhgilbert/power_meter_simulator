@@ -3,6 +3,38 @@ import CoreBluetooth
 
 class ViewController: UIViewController, CBPeripheralManagerDelegate {
     
+    var backgroundTask: UIBackgroundTaskIdentifier = .invalid
+
+    func registerBackgroundTask() {
+        backgroundTask = UIApplication.shared.beginBackgroundTask {
+            UIApplication.shared.endBackgroundTask(self.backgroundTask)
+            self.backgroundTask = .invalid
+        }
+        print("Background task registered")
+    }
+
+    func endBackgroundTask() {
+        UIApplication.shared.endBackgroundTask(backgroundTask)
+        backgroundTask = .invalid
+        print("Background task ended")
+    }
+
+    func applicationDidEnterBackground(_ application: UIApplication) {
+        // Ensure advertising continues
+        if !peripheralManager.isAdvertising {
+            let cyclingPowerServiceUUID = CBUUID(string: "1818")
+            peripheralManager.startAdvertising([CBAdvertisementDataServiceUUIDsKey: [cyclingPowerServiceUUID]])
+        }
+        // Ensure timer continues
+        startBroadcastingPower()
+        
+        registerBackgroundTask()
+    }
+
+    func applicationWillEnterForeground(_ application: UIApplication) {
+        endBackgroundTask()
+    }
+    
     // UI components
     var wattageLabel: UILabel!
     var increaseButton: UIButton!
@@ -31,14 +63,6 @@ class ViewController: UIViewController, CBPeripheralManagerDelegate {
         peripheralManager = CBPeripheralManager(delegate: self, queue: nil)
         
         setupUI()
-    }
-    
-    func applicationDidEnterBackground(_ application: UIApplication) {
-        if peripheralManager.isAdvertising {
-            print("App moved to background, continuing to advertise.")
-        } else {
-            print("Peripheral is not advertising. Consider restarting advertising.")
-        }
     }
     
     func peripheralManagerIsReady(toUpdateSubscribers peripheral: CBPeripheralManager) {
