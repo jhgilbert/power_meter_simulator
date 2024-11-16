@@ -121,6 +121,9 @@ class ViewController: UIViewController, CBPeripheralManagerDelegate {
     
     // Bluetooth logic --------------------------------------------------------
     
+    let cyclingPowerServiceUUID = CBUUID(string: "1818")
+    var cyclingPowerServiceAdded: Bool = false
+    
     // Bluetooth properties
     var peripheralManager: CBPeripheralManager!
     var cyclingPowerCharacteristic: CBMutableCharacteristic?
@@ -130,16 +133,18 @@ class ViewController: UIViewController, CBPeripheralManagerDelegate {
     func peripheralManagerDidUpdateState(_ peripheral: CBPeripheralManager) {
         if peripheral.state == .poweredOn {
             print("Bluetooth is ON.")
+            if (!cyclingPowerServiceAdded) {
+                setupCyclingPowerService()
+            }
         } else {
             print("Bluetooth is not available.")
         }
     }
     
-    // Set up a cycling power service
-    // and begin advertising it
-    func setupBluetoothServices() {
+    // Create a cycling power service
+    // and add it to the peripheralManager
+    func setupCyclingPowerService() {
         print("\nSetting up cycling power service...")
-        let cyclingPowerServiceUUID = CBUUID(string: "1818")
         let cyclingPowerCharacteristicUUID = CBUUID(string: "2A63")
         
         cyclingPowerCharacteristic = CBMutableCharacteristic(
@@ -153,7 +158,7 @@ class ViewController: UIViewController, CBPeripheralManagerDelegate {
         cyclingPowerService.characteristics = [cyclingPowerCharacteristic!]
         
         peripheralManager.add(cyclingPowerService)
-        peripheralManager.startAdvertising([CBAdvertisementDataServiceUUIDsKey: [cyclingPowerServiceUUID]])
+        cyclingPowerServiceAdded = true
     }
     
     // Calculate the current power data
@@ -180,9 +185,11 @@ class ViewController: UIViewController, CBPeripheralManagerDelegate {
         didSet {
             updateDisplayedBroadcastState()
             if (isBroadcasting) {
-                setupBluetoothServices()
+                print("\nisBroadcasting set to true, attempting to resume broadcasting...")
                 startBroadcastingTimer()
+                peripheralManager.startAdvertising([CBAdvertisementDataServiceUUIDsKey: [cyclingPowerServiceUUID]])
             } else {
+                print("\nisBroadcasting set to false, attempting to stop broadcasting...")
                 stopBroadcastingTimer()
                 peripheralManager.stopAdvertising()
             }
