@@ -3,6 +3,24 @@ import CoreBluetooth
 
 class ViewController: UIViewController, CBPeripheralManagerDelegate {
     
+    var timer: DispatchSourceTimer?
+
+    func startBroadcastingPower() {
+        timer?.cancel() // Cancel any existing timer
+        let queue = DispatchQueue.global(qos: .background)
+        timer = DispatchSource.makeTimerSource(queue: queue)
+        timer?.schedule(deadline: .now(), repeating: 2.0)
+        timer?.setEventHandler { [weak self] in
+            self?.broadcastPower()
+        }
+        timer?.resume()
+    }
+
+    func stopBroadcastingPower() {
+        timer?.cancel()
+        timer = nil
+    }
+    
     var backgroundTask: UIBackgroundTaskIdentifier = .invalid
 
     func registerBackgroundTask() {
@@ -45,9 +63,6 @@ class ViewController: UIViewController, CBPeripheralManagerDelegate {
     var cyclingPowerCharacteristic: CBMutableCharacteristic?
     
     var subscribedCentrals: [CBCentral] = []
-    
-    // Timer for broadcasting power every 2 seconds
-    var broadcastTimer: Timer?
     
     // Wattage variable
     var wattage: Int = 0 {
@@ -153,16 +168,6 @@ class ViewController: UIViewController, CBPeripheralManagerDelegate {
         startBroadcastingPower()
     }
     
-    func startBroadcastingPower() {
-        // Invalidate any existing timer before creating a new one
-        broadcastTimer?.invalidate()
-        
-        // Schedule the timer to call broadcastPower every 2 seconds
-        broadcastTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
-            self?.broadcastPower()
-        }
-    }
-    
     func broadcastPower() {
         // Ensure characteristic is not nil before attempting to update its value
         guard let cyclingPowerCharacteristic = cyclingPowerCharacteristic else {
@@ -228,9 +233,10 @@ class ViewController: UIViewController, CBPeripheralManagerDelegate {
         if let index = subscribedCentrals.firstIndex(of: central) {
             subscribedCentrals.remove(at: index)
         }
-        listSubscribedCentrals()
+        // listSubscribedCentrals()
     }
 
+    // optional debugging functions
     func listSubscribedCentrals() {
         print("Subscribed centrals:")
         for central in subscribedCentrals {
