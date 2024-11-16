@@ -91,7 +91,6 @@ class ViewController: UIViewController, CBPeripheralManagerDelegate {
     
     // Wattage data management ------------------------------------------------
     
-    // Wattage variable
     var wattage: Int = 0 {
         didSet {
             wattageLabel.text = "\(wattage) w"
@@ -106,7 +105,7 @@ class ViewController: UIViewController, CBPeripheralManagerDelegate {
         wattage = max(0, wattage - 5)
     }
     
-    @objc func buildWattageDataForTransmission() -> Data {
+    @objc func buildPowerDataForTransmission() -> Data {
         let flags: UInt16 = 0
         let powerValue = UInt16(wattage)
         let energy: UInt16 = 0
@@ -135,6 +134,8 @@ class ViewController: UIViewController, CBPeripheralManagerDelegate {
         }
     }
     
+    // Set up a cycling power service
+    // and begin advertising it
     func setupBluetoothServices() {
         let cyclingPowerServiceUUID = CBUUID(string: "1818")
         let cyclingPowerCharacteristicUUID = CBUUID(string: "2A63")
@@ -151,16 +152,17 @@ class ViewController: UIViewController, CBPeripheralManagerDelegate {
         
         peripheralManager.add(cyclingPowerService)
         peripheralManager.startAdvertising([CBAdvertisementDataServiceUUIDsKey: [cyclingPowerServiceUUID]])
-        startBroadcastingTimer()
     }
     
-    func broadcastPower() {
+    // Calculate the current power data
+    // and update its value for the cycling power service
+    func sendPowerData() {
         guard let cyclingPowerCharacteristic = cyclingPowerCharacteristic else { return }
         
-        var wattageData = buildWattageDataForTransmission()
+        let powerData = buildPowerDataForTransmission()
         
         // Notify connected devices of the updated value
-        let success = peripheralManager.updateValue(wattageData, for: cyclingPowerCharacteristic, onSubscribedCentrals: nil)
+        let success = peripheralManager.updateValue(powerData, for: cyclingPowerCharacteristic, onSubscribedCentrals: nil)
         
         // Debugging log
         if success {
@@ -175,18 +177,26 @@ class ViewController: UIViewController, CBPeripheralManagerDelegate {
     var isBroadcasting = false {
         didSet {
             updateDisplayedBroadcastState()
+            if (isBroadcasting) {
+                setupBluetoothServices()
+                startBroadcastingTimer()
+            } else {
+                stopBroadcastingTimer()
+                peripheralManager.stopAdvertising()
+            }
         }
     }
     
     var timer: DispatchSourceTimer?
     
+    // Send power data (if available) at an interval
     func startBroadcastingTimer() {
         timer?.cancel()
         let queue = DispatchQueue.global(qos: .background)
         timer = DispatchSource.makeTimerSource(queue: queue)
         timer?.schedule(deadline: .now(), repeating: 2.0)
         timer?.setEventHandler { [weak self] in
-            self?.broadcastPower()
+            self?.sendPowerData()
         }
         timer?.resume()
     }
@@ -197,22 +207,7 @@ class ViewController: UIViewController, CBPeripheralManagerDelegate {
     }
     
     @objc func toggleBroadcasting() {
-        if isBroadcasting {
-            stopBroadcasting()
-        } else {
-            startBroadcasting()
-        }
-    }
-    
-    func startBroadcasting() {
-        isBroadcasting = true
-        setupBluetoothServices()
-    }
-    
-    func stopBroadcasting() {
-        isBroadcasting = false
-        stopBroadcastingTimer()
-        peripheralManager.stopAdvertising()
+        isBroadcasting = !isBroadcasting
     }
     
     // Background task management ---------------------------------------------
