@@ -20,7 +20,7 @@ class ViewController: UIViewController, CBPeripheralManagerDelegate {
     // Wattage variable
     var wattage: Int = 0 {
         didSet {
-            wattageLabel.text = "\(wattage) W"
+            wattageLabel.text = "\(wattage) w"
         }
     }
     
@@ -33,12 +33,24 @@ class ViewController: UIViewController, CBPeripheralManagerDelegate {
         setupUI()
     }
     
+    func applicationDidEnterBackground(_ application: UIApplication) {
+        if peripheralManager.isAdvertising {
+            print("App moved to background, continuing to advertise.")
+        } else {
+            print("Peripheral is not advertising. Consider restarting advertising.")
+        }
+    }
+    
+    func peripheralManagerIsReady(toUpdateSubscribers peripheral: CBPeripheralManager) {
+        print("Peripheral Manager is ready to continue updating.")
+    }
+    
     func setupUI() {
         view.backgroundColor = .white
         
         // Wattage label
         wattageLabel = UILabel()
-        wattageLabel.text = "\(wattage)  W"
+        wattageLabel.text = "\(wattage)  w"
         wattageLabel.textAlignment = .center
         wattageLabel.font = UIFont.systemFont(ofSize: 48)
         wattageLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -154,6 +166,7 @@ class ViewController: UIViewController, CBPeripheralManagerDelegate {
         wattageData.append(contentsOf: [UInt8(powerData & 0x00ff), UInt8((powerData & 0xff00) >> 8)])
         wattageData.append(contentsOf: [UInt8(energyData & 0x00ff), UInt8((energyData & 0xff00) >> 8)])
         
+        /*
         print("Sending Wattage Data: \(wattageData)")
 
         // Log the bytes being sent
@@ -164,6 +177,7 @@ class ViewController: UIViewController, CBPeripheralManagerDelegate {
         for byte in wattageData {
             print(String(format: "%02x", byte))
         }
+        */
         
         // Update characteristic value
         cyclingPowerCharacteristic.value = wattageData
@@ -173,7 +187,7 @@ class ViewController: UIViewController, CBPeripheralManagerDelegate {
         
         // Debugging log
         if success {
-            print("Successfully broadcasted wattage: \(wattage) W")
+            print("Successfully broadcasted wattage: \(wattage)w")
         } else {
             print("Failed to broadcast wattage")
         }

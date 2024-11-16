@@ -292,6 +292,8 @@
 				DEVELOPMENT_TEAM = 6C6SYGL5Z3;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Power Meter Simulator/Info.plist";
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "This app requires Bluetooth to broadcast cycling power data.";
+				INFOPLIST_KEY_NSBluetoothPeripheralUsageDescription = "This app uses Bluetooth to act as a cycling power meter and send power data to connected fitness devices.";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIMainStoryboardFile = Main;
@@ -321,6 +323,8 @@
 				DEVELOPMENT_TEAM = 6C6SYGL5Z3;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Power Meter Simulator/Info.plist";
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "This app requires Bluetooth to broadcast cycling power data.";
+				INFOPLIST_KEY_NSBluetoothPeripheralUsageDescription = "This app uses Bluetooth to act as a cycling power meter and send power data to connected fitness devices.";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIMainStoryboardFile = Main;
