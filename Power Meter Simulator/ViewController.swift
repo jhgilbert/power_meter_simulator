@@ -3,42 +3,30 @@ import CoreBluetooth
 
 class ViewController: UIViewController, CBPeripheralManagerDelegate {
     
-    // UI components
+    let debug = true
+    
+    // UI components and setup ------------------------------------------------
+    
     var wattageLabel: UILabel!
     var increaseButton: UIButton!
     var decreaseButton: UIButton!
-    
-    // Bluetooth properties
-    var peripheralManager: CBPeripheralManager!
-    var cyclingPowerCharacteristic: CBMutableCharacteristic?
-    
-    var subscribedCentrals: [CBCentral] = []
-    
-    // Timer for broadcasting power every 2 seconds
-    var broadcastTimer: Timer?
-    
-    // Wattage variable
-    var wattage: Int = 0 {
-        didSet {
-            wattageLabel.text = "\(wattage) W"
-        }
-    }
-    
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        
-        // Initialize Bluetooth peripheral manager
-        peripheralManager = CBPeripheralManager(delegate: self, queue: nil)
-        
-        setupUI()
-    }
+    var toggleBroadcastButton: UIButton!
+    var statusLabel: UILabel!
     
     func setupUI() {
         view.backgroundColor = .white
         
+        // Status label
+        statusLabel = UILabel()
+        statusLabel.text = "Press start to broadcast power data."
+        statusLabel.textAlignment = .center
+        statusLabel.font = UIFont.systemFont(ofSize: 16)
+        statusLabel.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(statusLabel)
+        
         // Wattage label
         wattageLabel = UILabel()
-        wattageLabel.text = "\(wattage)  W"
+        wattageLabel.text = "\(wattage) w"
         wattageLabel.textAlignment = .center
         wattageLabel.font = UIFont.systemFont(ofSize: 48)
         wattageLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -60,17 +48,55 @@ class ViewController: UIViewController, CBPeripheralManagerDelegate {
         decreaseButton.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(decreaseButton)
         
+        // Toggle broadcast button
+        toggleBroadcastButton = UIButton(type: .system)
+        toggleBroadcastButton.setTitle("Start", for: .normal)
+        toggleBroadcastButton.titleLabel?.font = UIFont.systemFont(ofSize: 24)
+        toggleBroadcastButton.setTitleColor(.white, for: .normal) // Set text color to white
+        toggleBroadcastButton.backgroundColor = .systemBlue       // Set background color to blue
+        toggleBroadcastButton.layer.cornerRadius = 10            // Add rounded corners
+        toggleBroadcastButton.clipsToBounds = true               // Ensure corners are clipped
+        toggleBroadcastButton.contentEdgeInsets = UIEdgeInsets(top: 10, left: 20, bottom: 10, right: 20) // Add padding
+        toggleBroadcastButton.addTarget(self, action: #selector(toggleBroadcasting), for: .touchUpInside)
+        toggleBroadcastButton.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(toggleBroadcastButton)
+        
         // Layout constraints
         NSLayoutConstraint.activate([
+            statusLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            statusLabel.topAnchor.constraint(equalTo: view.topAnchor, constant: 100),
+            
             wattageLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            wattageLabel.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+            wattageLabel.topAnchor.constraint(equalTo: statusLabel.bottomAnchor, constant: 20),
             
             increaseButton.centerXAnchor.constraint(equalTo: view.centerXAnchor, constant: 50),
             increaseButton.topAnchor.constraint(equalTo: wattageLabel.bottomAnchor, constant: 20),
             
             decreaseButton.centerXAnchor.constraint(equalTo: view.centerXAnchor, constant: -50),
-            decreaseButton.topAnchor.constraint(equalTo: wattageLabel.bottomAnchor, constant: 20)
+            decreaseButton.topAnchor.constraint(equalTo: wattageLabel.bottomAnchor, constant: 20),
+            
+            toggleBroadcastButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            toggleBroadcastButton.topAnchor.constraint(equalTo: increaseButton.bottomAnchor, constant: 40)
         ])
+    }
+    
+    // Update the status label and the broadcast toggle button label
+    func updateDisplayedBroadcastState() {
+        if isBroadcasting {
+            toggleBroadcastButton.setTitle("Stop", for: .normal)
+            statusLabel.text = "Broadcasting power data ..."
+        } else {
+            toggleBroadcastButton.setTitle("Start", for: .normal)
+            statusLabel.text = "Press start to broadcast power data."
+        }
+    }
+    
+    // Wattage data management ------------------------------------------------
+    
+    var wattage: Int = 0 {
+        didSet {
+            wattageLabel.text = "\(wattage) w"
+        }
     }
     
     @objc func increaseWattage() {
@@ -81,21 +107,58 @@ class ViewController: UIViewController, CBPeripheralManagerDelegate {
         wattage = max(0, wattage - 5)
     }
     
-    // Bluetooth peripheral setup
+    @objc func buildPowerDataForTransmission() -> Data {
+        if (debug) {
+            print("\nBuilding power data for transmission...")
+        }
+        
+        let flags: UInt16 = 0
+        let powerValue = UInt16(wattage)
+        let energy: UInt16 = 0
+        
+        var wattageData = Data()
+        wattageData.append(contentsOf: [UInt8(flags & 0x00ff), UInt8((flags & 0xff00) >> 8)])
+        wattageData.append(contentsOf: [UInt8(powerValue & 0x00ff), UInt8((powerValue & 0xff00) >> 8)])
+        wattageData.append(contentsOf: [UInt8(energy & 0x00ff), UInt8((energy & 0xff00) >> 8)])
+        
+        return wattageData;
+    }
+    
+    // Bluetooth logic --------------------------------------------------------
+    
+    let cyclingPowerServiceUUID = CBUUID(string: "1818")
+    var cyclingPowerServiceAdded: Bool = false
+    
+    // Bluetooth properties
+    var peripheralManager: CBPeripheralManager!
+    var cyclingPowerCharacteristic: CBMutableCharacteristic?
+    
+    var subscribedCentrals: [CBCentral] = []
+    
     func peripheralManagerDidUpdateState(_ peripheral: CBPeripheralManager) {
         if peripheral.state == .poweredOn {
-            setupBluetoothServices()
+            if (debug) {
+                print("Bluetooth is ON.")
+            }
+            if (!cyclingPowerServiceAdded) {
+                setupCyclingPowerService()
+            }
         } else {
-            print("Bluetooth is not available")
+            if (debug) {
+                print("Bluetooth is not available.")
+            }
         }
     }
     
-    func setupBluetoothServices() {
-        // Define the Cycling Power Service and Characteristic UUIDs
-        let cyclingPowerServiceUUID = CBUUID(string: "1818")
+    // Create a cycling power service
+    // and add it to the peripheralManager
+    func setupCyclingPowerService() {
+        if (debug) {
+            print("\nSetting up cycling power service...")
+        }
+        
         let cyclingPowerCharacteristicUUID = CBUUID(string: "2A63")
         
-        // Create characteristic with properties and permissions
         cyclingPowerCharacteristic = CBMutableCharacteristic(
             type: cyclingPowerCharacteristicUUID,
             properties: [.notify, .read],
@@ -103,101 +166,153 @@ class ViewController: UIViewController, CBPeripheralManagerDelegate {
             permissions: [.readable]
         )
         
-        // Create the Cycling Power Service
         let cyclingPowerService = CBMutableService(type: cyclingPowerServiceUUID, primary: true)
         cyclingPowerService.characteristics = [cyclingPowerCharacteristic!]
         
-        // Add the service to the peripheral manager
         peripheralManager.add(cyclingPowerService)
-        
-        // Start advertising
-        peripheralManager.startAdvertising([CBAdvertisementDataServiceUUIDsKey: [cyclingPowerServiceUUID]])
-        
-        // Start broadcasting power every 2 seconds
-        startBroadcastingPower()
+        cyclingPowerServiceAdded = true
     }
     
-    func startBroadcastingPower() {
-        // Invalidate any existing timer before creating a new one
-        broadcastTimer?.invalidate()
+    // Calculate the current power data
+    // and update its value for the cycling power service
+    func sendPowerData() {
+        guard let cyclingPowerCharacteristic = cyclingPowerCharacteristic else { return }
         
-        // Schedule the timer to call broadcastPower every 2 seconds
-        broadcastTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
-            self?.broadcastPower()
-        }
-    }
-    
-    func broadcastPower() {
-        // Ensure characteristic is not nil before attempting to update its value
-        guard let cyclingPowerCharacteristic = cyclingPowerCharacteristic else {
-            print("Cycling Power Characteristic is nil.")
-            return
-        }
-        
-        // Convert wattage to Data using `withUnsafeBytes` for reliability
-        // let wattageData = withUnsafeBytes(of: UInt16(wattage).littleEndian) { Data($0) }
-        
-        // Set flags and energy to 0
-        let flags: UInt16 = 0
-        let energy: UInt16 = 0
-
-        let powerValue = UInt16(wattage)
-
-        // Convert to little-endian format
-        let flagsData = flags.littleEndian
-        let powerData = powerValue.littleEndian
-        let energyData = energy.littleEndian
-
-        // Create Data object
-        var wattageData = Data()
-        wattageData.append(contentsOf: [UInt8(flagsData & 0x00ff), UInt8((flagsData & 0xff00) >> 8)])
-        wattageData.append(contentsOf: [UInt8(powerData & 0x00ff), UInt8((powerData & 0xff00) >> 8)])
-        wattageData.append(contentsOf: [UInt8(energyData & 0x00ff), UInt8((energyData & 0xff00) >> 8)])
-        
-        print("Sending Wattage Data: \(wattageData)")
-
-        // Log the bytes being sent
-        for byte in wattageData {
-            print(String(format: "%02x", byte))
-        }
-        
-        for byte in wattageData {
-            print(String(format: "%02x", byte))
-        }
-        
-        // Update characteristic value
-        cyclingPowerCharacteristic.value = wattageData
+        let powerData = buildPowerDataForTransmission()
         
         // Notify connected devices of the updated value
-        let success = peripheralManager.updateValue(wattageData, for: cyclingPowerCharacteristic, onSubscribedCentrals: nil)
+        let success = peripheralManager.updateValue(powerData, for: cyclingPowerCharacteristic, onSubscribedCentrals: nil)
         
         // Debugging log
         if success {
-            print("Successfully broadcasted wattage: \(wattage) W")
+            print("Successfully broadcasted wattage: \(wattage) w")
         } else {
             print("Failed to broadcast wattage")
         }
     }
     
-    func peripheralManager(_ peripheral: CBPeripheralManager, central: CBCentral, didSubscribeTo characteristic: CBCharacteristic) {
-        print("Central subscribed: \(central)")
-        subscribedCentrals.append(central)
-        listSubscribedCentrals()
+    // Broadcasting toggle management -----------------------------------------
+    
+    var isBroadcasting = false {
+        didSet {
+            updateDisplayedBroadcastState()
+            if (isBroadcasting) {
+                if (debug) {
+                    print("\nisBroadcasting set to true, attempting to resume broadcasting...")
+                }
+                startBroadcastingTimer()
+                peripheralManager.startAdvertising([CBAdvertisementDataServiceUUIDsKey: [cyclingPowerServiceUUID]])
+            } else {
+                if (debug) {
+                    print("\nisBroadcasting set to false, attempting to stop broadcasting...")
+                }
+                stopBroadcastingTimer()
+                peripheralManager.stopAdvertising()
+            }
+        }
+    }
+    
+    var timer: DispatchSourceTimer?
+    
+    // Send power data (if available) at an interval
+    func startBroadcastingTimer() {
+        if (debug) {
+            print("\nStarting broadcasting timer ...")
+        }
+        
+        timer?.cancel()
+        let queue = DispatchQueue.global(qos: .background)
+        timer = DispatchSource.makeTimerSource(queue: queue)
+        timer?.schedule(deadline: .now(), repeating: 2.0)
+        timer?.setEventHandler { [weak self] in
+            self?.sendPowerData()
+        }
+        timer?.resume()
+    }
+    
+    func stopBroadcastingTimer() {
+        if (debug) {
+            print("\nStopping broadcasting timer ...")
+        }
+        
+        timer?.cancel()
+        timer = nil
+    }
+    
+    @objc func toggleBroadcasting() {
+        isBroadcasting = !isBroadcasting
+    }
+    
+    // Background task management ---------------------------------------------
+    
+    var backgroundTask: UIBackgroundTaskIdentifier = .invalid
+    
+    func registerBackgroundTask() {
+        backgroundTask = UIApplication.shared.beginBackgroundTask {
+            UIApplication.shared.endBackgroundTask(self.backgroundTask)
+            self.backgroundTask = .invalid
+        }
+        
+        if (debug) {
+            print("Background task registered")
+        }
     }
 
-    func peripheralManager(_ peripheral: CBPeripheralManager, central: CBCentral, didUnsubscribeFrom characteristic: CBCharacteristic) {
-        print("Central unsubscribed: \(central)")
-        if let index = subscribedCentrals.firstIndex(of: central) {
-            subscribedCentrals.remove(at: index)
+    func endBackgroundTask() {
+        UIApplication.shared.endBackgroundTask(backgroundTask)
+        backgroundTask = .invalid
+        
+        if (debug) {
+            print("Background task ended")
         }
-        listSubscribedCentrals()
+    }
+    
+    // Handle opening and closing of app --------------------------------------
+    
+    func applicationDidEnterBackground(_ application: UIApplication) {
+        if (debug) {
+            print("applicationDidEnterBackground called.")
+        }
+        
+        if isBroadcasting {
+            if (debug) {
+                print("Broadcasting is active; setting up background task.")
+            }
+            
+            registerBackgroundTask()
+            
+            if !peripheralManager.isAdvertising {
+                if (debug) {
+                    print("Peripheral manager not advertising; restarting advertising.")
+                }
+                peripheralManager.startAdvertising([CBAdvertisementDataServiceUUIDsKey: [cyclingPowerServiceUUID]])
+            }
+            
+            startBroadcastingTimer()
+        } else {
+            if (debug) {
+                print("Not broadcasting; no background task registered.")
+            }
+        }
     }
 
-    func listSubscribedCentrals() {
-        print("Subscribed centrals:")
-        for central in subscribedCentrals {
-            print(central)
+    func applicationWillEnterForeground(_ application: UIApplication) {
+        if (debug) {
+            print("\nThe application will enter the foreground.")
         }
+        
+        endBackgroundTask()
+    }
+    
+    // Initial application load -----------------------------------------------
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        
+        // Initialize Bluetooth peripheral manager
+        peripheralManager = CBPeripheralManager(delegate: self, queue: nil)
+        
+        setupUI()
+        updateDisplayedBroadcastState()
     }
 }
-
