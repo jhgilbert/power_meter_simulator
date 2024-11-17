@@ -3,7 +3,15 @@ import CoreBluetooth
 
 class ViewController: UIViewController, CBPeripheralManagerDelegate {
     
-    let debug = true
+    override var supportedInterfaceOrientations: UIInterfaceOrientationMask {
+        return .portrait
+    }
+
+    override var preferredInterfaceOrientationForPresentation: UIInterfaceOrientation {
+        return .portrait
+    }
+    
+    let debug = false
     
     // UI components and setup ------------------------------------------------
     
@@ -18,32 +26,36 @@ class ViewController: UIViewController, CBPeripheralManagerDelegate {
         
         // Status label
         statusLabel = UILabel()
-        statusLabel.text = "Press start to broadcast power data."
+        statusLabel.text = "Press start to begin broadcasting."
+        statusLabel.lineBreakMode = .byWordWrapping
         statusLabel.textAlignment = .center
-        statusLabel.font = UIFont.systemFont(ofSize: 16)
+        statusLabel.font = UIFont.systemFont(ofSize: 21)
         statusLabel.translatesAutoresizingMaskIntoConstraints = false
+        statusLabel.numberOfLines = 0 // Allow multiple lines
         view.addSubview(statusLabel)
         
         // Wattage label
         wattageLabel = UILabel()
-        wattageLabel.text = "\(wattage) w"
+        wattageLabel.text = "\(wattage)\u{202F}w"
         wattageLabel.textAlignment = .center
-        wattageLabel.font = UIFont.systemFont(ofSize: 48)
+        wattageLabel.font = UIFont.systemFont(ofSize: 70)
         wattageLabel.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(wattageLabel)
         
         // Increase button
         increaseButton = UIButton(type: .system)
         increaseButton.setTitle("+", for: .normal)
-        increaseButton.titleLabel?.font = UIFont.systemFont(ofSize: 60)
+        increaseButton.titleLabel?.font = UIFont.systemFont(ofSize: 90)
+        increaseButton.setTitleColor(.systemTeal, for: .normal) // Set text color to orange
         increaseButton.addTarget(self, action: #selector(increaseWattage), for: .touchUpInside)
         increaseButton.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(increaseButton)
         
         // Decrease button
         decreaseButton = UIButton(type: .system)
-        decreaseButton.setTitle("-", for: .normal)
-        decreaseButton.titleLabel?.font = UIFont.systemFont(ofSize: 60)
+        decreaseButton.setTitle("–", for: .normal)
+        decreaseButton.titleLabel?.font = UIFont.systemFont(ofSize: 90)
+        decreaseButton.setTitleColor(.systemTeal, for: .normal) // Set text color to orange
         decreaseButton.addTarget(self, action: #selector(decreaseWattage), for: .touchUpInside)
         decreaseButton.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(decreaseButton)
@@ -51,12 +63,12 @@ class ViewController: UIViewController, CBPeripheralManagerDelegate {
         // Toggle broadcast button
         toggleBroadcastButton = UIButton(type: .system)
         toggleBroadcastButton.setTitle("Start", for: .normal)
-        toggleBroadcastButton.titleLabel?.font = UIFont.systemFont(ofSize: 24)
+        toggleBroadcastButton.titleLabel?.font = UIFont.systemFont(ofSize: 50)
         toggleBroadcastButton.setTitleColor(.white, for: .normal) // Set text color to white
-        toggleBroadcastButton.backgroundColor = .systemBlue       // Set background color to blue
+        toggleBroadcastButton.backgroundColor = .orange       // Set background color to orange
         toggleBroadcastButton.layer.cornerRadius = 10            // Add rounded corners
         toggleBroadcastButton.clipsToBounds = true               // Ensure corners are clipped
-        toggleBroadcastButton.contentEdgeInsets = UIEdgeInsets(top: 10, left: 20, bottom: 10, right: 20) // Add padding
+        toggleBroadcastButton.contentEdgeInsets = UIEdgeInsets(top: 15, left: 25, bottom: 15, right: 25) // Add padding
         toggleBroadcastButton.addTarget(self, action: #selector(toggleBroadcasting), for: .touchUpInside)
         toggleBroadcastButton.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(toggleBroadcastButton)
@@ -64,15 +76,17 @@ class ViewController: UIViewController, CBPeripheralManagerDelegate {
         // Layout constraints
         NSLayoutConstraint.activate([
             statusLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            statusLabel.topAnchor.constraint(equalTo: view.topAnchor, constant: 100),
+            statusLabel.topAnchor.constraint(equalTo: view.topAnchor, constant: 200),
+            // statusLabel.leadingAnchor.constraint(greaterThanOrEqualTo: view.leadingAnchor, constant: 40),
+            // statusLabel.trailingAnchor.constraint(lessThanOrEqualTo: view.trailingAnchor, constant: -40),
             
             wattageLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            wattageLabel.topAnchor.constraint(equalTo: statusLabel.bottomAnchor, constant: 20),
+            wattageLabel.topAnchor.constraint(equalTo: statusLabel.bottomAnchor, constant: 50),
             
-            increaseButton.centerXAnchor.constraint(equalTo: view.centerXAnchor, constant: 50),
+            increaseButton.centerXAnchor.constraint(equalTo: view.centerXAnchor, constant: 70),
             increaseButton.topAnchor.constraint(equalTo: wattageLabel.bottomAnchor, constant: 20),
             
-            decreaseButton.centerXAnchor.constraint(equalTo: view.centerXAnchor, constant: -50),
+            decreaseButton.centerXAnchor.constraint(equalTo: view.centerXAnchor, constant: -70),
             decreaseButton.topAnchor.constraint(equalTo: wattageLabel.bottomAnchor, constant: 20),
             
             toggleBroadcastButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
@@ -87,7 +101,7 @@ class ViewController: UIViewController, CBPeripheralManagerDelegate {
             statusLabel.text = "Broadcasting power data ..."
         } else {
             toggleBroadcastButton.setTitle("Start", for: .normal)
-            statusLabel.text = "Press start to broadcast power data."
+            statusLabel.text = "Press start to begin broadcasting."
         }
     }
     
@@ -95,7 +109,7 @@ class ViewController: UIViewController, CBPeripheralManagerDelegate {
     
     var wattage: Int = 0 {
         didSet {
-            wattageLabel.text = "\(wattage) w"
+            wattageLabel.text = "\(wattage)\u{202F}w"
         }
     }
     
@@ -308,10 +322,10 @@ class ViewController: UIViewController, CBPeripheralManagerDelegate {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        
+                
         // Initialize Bluetooth peripheral manager
         peripheralManager = CBPeripheralManager(delegate: self, queue: nil)
-        
+                
         setupUI()
         updateDisplayedBroadcastState()
     }

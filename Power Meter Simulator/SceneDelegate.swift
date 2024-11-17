@@ -10,6 +10,7 @@ import UIKit
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
     var window: UIWindow?
+    let debug = false
 
 
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
@@ -37,14 +38,20 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     }
 
     func sceneDidEnterBackground(_ scene: UIScene) {
-        print("SceneDelegate: Scene entered the background.")
+        if (debug) {
+            print("SceneDelegate: Scene entered the background.")
+        }
+        
         if let viewController = window?.rootViewController as? ViewController {
             viewController.applicationDidEnterBackground(UIApplication.shared)
         }
     }
 
     func sceneWillEnterForeground(_ scene: UIScene) {
-        print("SceneDelegate: Scene will enter the foreground.")
+        if (debug) {
+            print("SceneDelegate: Scene will enter the foreground.")
+        }
+        
         if let viewController = window?.rootViewController as? ViewController {
             viewController.applicationWillEnterForeground(UIApplication.shared)
         }
