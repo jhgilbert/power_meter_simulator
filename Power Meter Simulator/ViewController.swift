@@ -27,11 +27,9 @@ class ViewController: UIViewController, CBPeripheralManagerDelegate {
         // Status label
         statusLabel = UILabel()
         statusLabel.text = "Press start to begin broadcasting."
-        statusLabel.lineBreakMode = .byWordWrapping
         statusLabel.textAlignment = .center
         statusLabel.font = UIFont.systemFont(ofSize: 21)
         statusLabel.translatesAutoresizingMaskIntoConstraints = false
-        statusLabel.numberOfLines = 0 // Allow multiple lines
         view.addSubview(statusLabel)
         
         // Wattage label
@@ -61,13 +59,14 @@ class ViewController: UIViewController, CBPeripheralManagerDelegate {
         view.addSubview(decreaseButton)
         
         // Toggle broadcast button
+
         toggleBroadcastButton = UIButton(type: .system)
         toggleBroadcastButton.setTitle("Start", for: .normal)
         toggleBroadcastButton.titleLabel?.font = UIFont.systemFont(ofSize: 50)
-        toggleBroadcastButton.setTitleColor(.white, for: .normal) // Set text color to white
-        toggleBroadcastButton.backgroundColor = .orange       // Set background color to orange
-        toggleBroadcastButton.layer.cornerRadius = 10            // Add rounded corners
-        toggleBroadcastButton.clipsToBounds = true               // Ensure corners are clipped
+        toggleBroadcastButton.setTitleColor(.white, for: .normal)
+        toggleBroadcastButton.backgroundColor = .orange
+        toggleBroadcastButton.layer.cornerRadius = 10
+        toggleBroadcastButton.clipsToBounds = true
         toggleBroadcastButton.contentEdgeInsets = UIEdgeInsets(top: 15, left: 25, bottom: 15, right: 25) // Add padding
         toggleBroadcastButton.addTarget(self, action: #selector(toggleBroadcasting), for: .touchUpInside)
         toggleBroadcastButton.translatesAutoresizingMaskIntoConstraints = false
