@@ -76,8 +76,6 @@ class ViewController: UIViewController, CBPeripheralManagerDelegate {
         NSLayoutConstraint.activate([
             statusLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             statusLabel.topAnchor.constraint(equalTo: view.topAnchor, constant: 200),
-            // statusLabel.leadingAnchor.constraint(greaterThanOrEqualTo: view.leadingAnchor, constant: 40),
-            // statusLabel.trailingAnchor.constraint(lessThanOrEqualTo: view.trailingAnchor, constant: -40),
             
             wattageLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             wattageLabel.topAnchor.constraint(equalTo: statusLabel.bottomAnchor, constant: 50),
@@ -197,9 +195,9 @@ class ViewController: UIViewController, CBPeripheralManagerDelegate {
         let success = peripheralManager.updateValue(powerData, for: cyclingPowerCharacteristic, onSubscribedCentrals: nil)
         
         // Debugging log
-        if success {
+        if (debug && success) {
             print("Successfully broadcasted wattage: \(wattage) w")
-        } else {
+        } else if (debug) {
             print("Failed to broadcast wattage")
         }
     }
@@ -256,30 +254,6 @@ class ViewController: UIViewController, CBPeripheralManagerDelegate {
         isBroadcasting = !isBroadcasting
     }
     
-    // Background task management ---------------------------------------------
-    
-    var backgroundTask: UIBackgroundTaskIdentifier = .invalid
-    
-    func registerBackgroundTask() {
-        backgroundTask = UIApplication.shared.beginBackgroundTask {
-            UIApplication.shared.endBackgroundTask(self.backgroundTask)
-            self.backgroundTask = .invalid
-        }
-        
-        if (debug) {
-            print("Background task registered")
-        }
-    }
-
-    func endBackgroundTask() {
-        UIApplication.shared.endBackgroundTask(backgroundTask)
-        backgroundTask = .invalid
-        
-        if (debug) {
-            print("Background task ended")
-        }
-    }
-    
     // Handle opening and closing of app --------------------------------------
     
     func applicationDidEnterBackground(_ application: UIApplication) {
@@ -288,12 +262,6 @@ class ViewController: UIViewController, CBPeripheralManagerDelegate {
         }
         
         if isBroadcasting {
-            if (debug) {
-                print("Broadcasting is active; setting up background task.")
-            }
-            
-            registerBackgroundTask()
-            
             if !peripheralManager.isAdvertising {
                 if (debug) {
                     print("Peripheral manager not advertising; restarting advertising.")
@@ -303,8 +271,9 @@ class ViewController: UIViewController, CBPeripheralManagerDelegate {
             
             startBroadcastingTimer()
         } else {
+            stopBroadcastingTimer()
             if (debug) {
-                print("Not broadcasting; no background task registered.")
+                print("Entered background but should not be broadcasting, stopping timer.")
             }
         }
     }
@@ -313,8 +282,6 @@ class ViewController: UIViewController, CBPeripheralManagerDelegate {
         if (debug) {
             print("\nThe application will enter the foreground.")
         }
-        
-        endBackgroundTask()
     }
     
     // Initial application load -----------------------------------------------
