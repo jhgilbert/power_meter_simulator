@@ -16,8 +16,10 @@ class ViewController: UIViewController, CBPeripheralManagerDelegate {
     // UI components and setup ------------------------------------------------
     
     var wattageLabel: UILabel!
-    var increaseButton: UIButton!
-    var decreaseButton: UIButton!
+    var increaseByOneButton: UIButton!
+    var decreaseByOneButton: UIButton!
+    var increaseByFiveButton: UIButton!
+    var decreaseByFiveButton: UIButton!
     var toggleBroadcastButton: UIButton!
     var statusLabel: UILabel!
     
@@ -40,23 +42,41 @@ class ViewController: UIViewController, CBPeripheralManagerDelegate {
         wattageLabel.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(wattageLabel)
         
-        // Increase button
-        increaseButton = UIButton(type: .system)
-        increaseButton.setTitle("+", for: .normal)
-        increaseButton.titleLabel?.font = UIFont.systemFont(ofSize: 90)
-        increaseButton.setTitleColor(.systemTeal, for: .normal) // Set text color to orange
-        increaseButton.addTarget(self, action: #selector(increaseWattage), for: .touchUpInside)
-        increaseButton.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(increaseButton)
+        // Increase by 1 button
+        increaseByOneButton = UIButton(type: .system)
+        increaseByOneButton.setTitle("+", for: .normal)
+        increaseByOneButton.titleLabel?.font = UIFont.systemFont(ofSize: 70)
+        increaseByOneButton.setTitleColor(.systemTeal, for: .normal) // Set text color to orange
+        increaseByOneButton.addTarget(self, action: #selector(increaseWattageBy1), for: .touchUpInside)
+        increaseByOneButton.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(increaseByOneButton)
         
-        // Decrease button
-        decreaseButton = UIButton(type: .system)
-        decreaseButton.setTitle("–", for: .normal)
-        decreaseButton.titleLabel?.font = UIFont.systemFont(ofSize: 90)
-        decreaseButton.setTitleColor(.systemTeal, for: .normal) // Set text color to orange
-        decreaseButton.addTarget(self, action: #selector(decreaseWattage), for: .touchUpInside)
-        decreaseButton.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(decreaseButton)
+        // Increase by 5 button
+        increaseByFiveButton = UIButton(type: .system)
+        increaseByFiveButton.setTitle("++", for: .normal)
+        increaseByFiveButton.titleLabel?.font = UIFont.systemFont(ofSize: 90)
+        increaseByFiveButton.setTitleColor(.systemTeal, for: .normal) // Set text color to orange
+        increaseByFiveButton.addTarget(self, action: #selector(increaseWattageBy5), for: .touchUpInside)
+        increaseByFiveButton.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(increaseByFiveButton)
+        
+        // Decrease by 1 button
+        decreaseByOneButton = UIButton(type: .system)
+        decreaseByOneButton.setTitle("–", for: .normal)
+        decreaseByOneButton.titleLabel?.font = UIFont.systemFont(ofSize: 70)
+        decreaseByOneButton.setTitleColor(.systemTeal, for: .normal) // Set text color to orange
+        decreaseByOneButton.addTarget(self, action: #selector(decreaseWattageBy1), for: .touchUpInside)
+        decreaseByOneButton.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(decreaseByOneButton)
+        
+        // Decrease by 5 button
+        decreaseByFiveButton = UIButton(type: .system)
+        decreaseByFiveButton.setTitle("–\u{202F}–", for: .normal)
+        decreaseByFiveButton.titleLabel?.font = UIFont.systemFont(ofSize: 90)
+        decreaseByFiveButton.setTitleColor(.systemTeal, for: .normal) // Set text color to orange
+        decreaseByFiveButton.addTarget(self, action: #selector(decreaseWattageBy5), for: .touchUpInside)
+        decreaseByFiveButton.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(decreaseByFiveButton)
         
         // Toggle broadcast button
 
@@ -80,16 +100,22 @@ class ViewController: UIViewController, CBPeripheralManagerDelegate {
             // statusLabel.trailingAnchor.constraint(lessThanOrEqualTo: view.trailingAnchor, constant: -40),
             
             wattageLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            wattageLabel.topAnchor.constraint(equalTo: statusLabel.bottomAnchor, constant: 50),
+            wattageLabel.topAnchor.constraint(equalTo: statusLabel.bottomAnchor, constant: 30),
             
-            increaseButton.centerXAnchor.constraint(equalTo: view.centerXAnchor, constant: 70),
-            increaseButton.topAnchor.constraint(equalTo: wattageLabel.bottomAnchor, constant: 20),
+            decreaseByOneButton.centerXAnchor.constraint(equalTo: view.centerXAnchor, constant: -75),
+            decreaseByOneButton.topAnchor.constraint(equalTo: wattageLabel.bottomAnchor, constant: 20),
             
-            decreaseButton.centerXAnchor.constraint(equalTo: view.centerXAnchor, constant: -70),
-            decreaseButton.topAnchor.constraint(equalTo: wattageLabel.bottomAnchor, constant: 20),
+            decreaseByFiveButton.centerXAnchor.constraint(equalTo: view.centerXAnchor, constant: -70),
+            decreaseByFiveButton.topAnchor.constraint(equalTo: wattageLabel.bottomAnchor, constant: 90),
+            
+            increaseByOneButton.centerXAnchor.constraint(equalTo: view.centerXAnchor, constant: 70),
+            increaseByOneButton.topAnchor.constraint(equalTo: wattageLabel.bottomAnchor, constant: 20),
+            
+            increaseByFiveButton.centerXAnchor.constraint(equalTo: view.centerXAnchor, constant: 75),
+            increaseByFiveButton.topAnchor.constraint(equalTo: wattageLabel.bottomAnchor, constant: 90),
             
             toggleBroadcastButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            toggleBroadcastButton.topAnchor.constraint(equalTo: increaseButton.bottomAnchor, constant: 40)
+            toggleBroadcastButton.topAnchor.constraint(equalTo: increaseByFiveButton.bottomAnchor, constant: 40)
         ])
     }
     
@@ -112,12 +138,20 @@ class ViewController: UIViewController, CBPeripheralManagerDelegate {
         }
     }
     
-    @objc func increaseWattage() {
+    @objc func increaseWattageBy5() {
         wattage += 5
     }
     
-    @objc func decreaseWattage() {
+    @objc func decreaseWattageBy5() {
         wattage = max(0, wattage - 5)
+    }
+    
+    @objc func increaseWattageBy1() {
+        wattage += 1
+    }
+    
+    @objc func decreaseWattageBy1() {
+        wattage = max(0, wattage - 1)
     }
     
     @objc func buildPowerDataForTransmission() -> Data {
