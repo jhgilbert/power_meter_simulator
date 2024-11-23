@@ -45,7 +45,7 @@ class ViewController: UIViewController, CBPeripheralManagerDelegate {
         // Increase by 1 button
         increaseByOneButton = UIButton(type: .system)
         increaseByOneButton.setTitle("+", for: .normal)
-        increaseByOneButton.titleLabel?.font = UIFont.systemFont(ofSize: 70)
+        increaseByOneButton.titleLabel?.font = UIFont.systemFont(ofSize: 90)
         increaseByOneButton.setTitleColor(.systemTeal, for: .normal) // Set text color to orange
         increaseByOneButton.addTarget(self, action: #selector(increaseWattageBy1), for: .touchUpInside)
         increaseByOneButton.translatesAutoresizingMaskIntoConstraints = false
@@ -63,7 +63,7 @@ class ViewController: UIViewController, CBPeripheralManagerDelegate {
         // Decrease by 1 button
         decreaseByOneButton = UIButton(type: .system)
         decreaseByOneButton.setTitle("–", for: .normal)
-        decreaseByOneButton.titleLabel?.font = UIFont.systemFont(ofSize: 70)
+        decreaseByOneButton.titleLabel?.font = UIFont.systemFont(ofSize: 90)
         decreaseByOneButton.setTitleColor(.systemTeal, for: .normal) // Set text color to orange
         decreaseByOneButton.addTarget(self, action: #selector(decreaseWattageBy1), for: .touchUpInside)
         decreaseByOneButton.translatesAutoresizingMaskIntoConstraints = false
@@ -95,24 +95,24 @@ class ViewController: UIViewController, CBPeripheralManagerDelegate {
         // Layout constraints
         NSLayoutConstraint.activate([
             statusLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            statusLabel.topAnchor.constraint(equalTo: view.topAnchor, constant: 200),
+            statusLabel.topAnchor.constraint(equalTo: view.topAnchor, constant: 180),
             // statusLabel.leadingAnchor.constraint(greaterThanOrEqualTo: view.leadingAnchor, constant: 40),
             // statusLabel.trailingAnchor.constraint(lessThanOrEqualTo: view.trailingAnchor, constant: -40),
             
             wattageLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            wattageLabel.topAnchor.constraint(equalTo: statusLabel.bottomAnchor, constant: 30),
+            wattageLabel.topAnchor.constraint(equalTo: statusLabel.bottomAnchor, constant: 50),
             
-            decreaseByOneButton.centerXAnchor.constraint(equalTo: view.centerXAnchor, constant: -75),
-            decreaseByOneButton.topAnchor.constraint(equalTo: wattageLabel.bottomAnchor, constant: 20),
+            decreaseByOneButton.centerXAnchor.constraint(equalTo: view.centerXAnchor, constant: -70),
+            decreaseByOneButton.topAnchor.constraint(equalTo: wattageLabel.bottomAnchor, constant: 10),
             
-            decreaseByFiveButton.centerXAnchor.constraint(equalTo: view.centerXAnchor, constant: -70),
-            decreaseByFiveButton.topAnchor.constraint(equalTo: wattageLabel.bottomAnchor, constant: 90),
+            decreaseByFiveButton.centerXAnchor.constraint(equalTo: view.centerXAnchor, constant: -80),
+            decreaseByFiveButton.topAnchor.constraint(equalTo: wattageLabel.bottomAnchor, constant: 100),
             
             increaseByOneButton.centerXAnchor.constraint(equalTo: view.centerXAnchor, constant: 70),
-            increaseByOneButton.topAnchor.constraint(equalTo: wattageLabel.bottomAnchor, constant: 20),
+            increaseByOneButton.topAnchor.constraint(equalTo: wattageLabel.bottomAnchor, constant: 10),
             
-            increaseByFiveButton.centerXAnchor.constraint(equalTo: view.centerXAnchor, constant: 75),
-            increaseByFiveButton.topAnchor.constraint(equalTo: wattageLabel.bottomAnchor, constant: 90),
+            increaseByFiveButton.centerXAnchor.constraint(equalTo: view.centerXAnchor, constant: 80),
+            increaseByFiveButton.topAnchor.constraint(equalTo: wattageLabel.bottomAnchor, constant: 100),
             
             toggleBroadcastButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             toggleBroadcastButton.topAnchor.constraint(equalTo: increaseByFiveButton.bottomAnchor, constant: 40)
